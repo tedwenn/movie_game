@@ -1,11 +1,4 @@
-import pprint
-from film import Film, FilmSet
-import os
+from game import Game
 
-pp = pprint.PrettyPrinter(indent=4)
-
-film_ids = []
-for filename in os.listdir('api_responses'):
-    film_ids.append(int(filename.split('.')[0]))
-films = FilmSet(film_ids)
-pp.pprint(films.get_similar_films(313369)[:10])
+game = Game(11)
+game.guess(1891)
