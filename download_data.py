@@ -2,6 +2,7 @@ import requests
 import time
 import os
 import json
+from datetime import datetime
 
 # Your read access token
 access_token = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMjc0MzE5ODRjYjQ5ZDE5NWIxZTk2MjQxMzllNjcyOCIsInN1YiI6IjY1OTNmZDQ0MDI4ZjE0NzdiYmM2MGQ2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.dKw_as9PsyvjLcLnIfH0GSBy66E-a9SW_ff232Q4p2M'
@@ -33,7 +34,6 @@ def get_film_response(id, endpoint=None):
     ptf = f'api_responses/{id}.json'
     if os.path.exists(ptf):
         # If the file exists, read it
-        print(ptf, 'exists')
         with open(ptf, 'r') as file:
             data = json.load(file)
             return data
@@ -49,23 +49,39 @@ def get_film_response(id, endpoint=None):
 
     return data
 
-def get_top_films(page=None):
+def get_top_films(year=None, page=None):
 
-    url = 'https://api.themoviedb.org/3/discover/movie?include_video=false&page=3&sort_by=vote_count.desc'
+    today = datetime.now()
 
-    if not page:
-        response = get_response(url)
-        total_pages = response['total_pages']
-        for page in range(1, total_pages+1):
-            for film_id in get_top_films(page):
-                yield film_id
+    if year:
+
+        date_str = today.strftime('%Y-%m-%d')
+        url = f'https://api.themoviedb.org/3/discover/movie?include_video=false&with_runtime.gte=60&release_date.lte={date_str}&primary_release_year={year}&vote_count.gte=50&sort_by=vote_count.desc'
+
+        if page:
+            url += f'&page={page}'
+            response = get_response(url)
+            results = response['results']
+            for result in results:
+                yield result['id']
+        else:
+            response = get_response(url)
+            total_pages = min(response['total_pages'], 500) # API limits to 500 pages
+            for page in range(1, total_pages+1):
+                for film_id in get_top_films(year, page):
+                    yield film_id
     else:
-        url = f'{url}&page={page}'
-        response = get_response(url)
-        results = response['results']
-        for result in results:
-            yield result['id']
+
+        for year in range(today.year, 1899, -1):
+            for film_id in get_top_films(year, page):
+                yield film_id
 
 def download_data():
     for film_id in get_top_films():
-        get_film_response(film_id)
+        try:
+            get_film_response(film_id)
+        except Exception as e:
+            if str(e).startswith('Error with status code 404'):
+                print(e)
+            else:
+                raise e
