@@ -160,8 +160,7 @@ cython_debug/
 #.idea/
 
 # Data storage
-data/
-api_responses/
+local_storage/
 
-# Pickles
-*.pkl
+# config
+config.yaml
