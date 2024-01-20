@@ -18,7 +18,6 @@ def get_or_cache_response(func):
         directory = os.path.join(cache_directory, netloc, *path_components[1:-1], *query)
         ptf = os.path.join(directory, f'{path_components[-1]}.json')
         if os.path.exists(ptf):
-            print('reading from cache', url)
             with open(ptf, 'r') as file:
                 data = json.load(file)
                 return data
@@ -38,7 +37,7 @@ def clear_cache():
     for subdir, _, files in os.walk(cache_directory):
         for file in files:
             ptf = os.path.join(subdir, file)
-            if (time.time() - os.path.getmtime(ptf)) / 60 / 60 / 24 < cache_duration_days:
+            if (time.time() - os.path.getmtime(ptf)) / 60 / 60 / 24 > cache_duration_days:
                 print('clearing', ptf)
                 os.remove(ptf)
 
@@ -106,11 +105,9 @@ class TMDB():
             for year in range(*year_range):
                 for film_id in self.film_list(year=year, min_vote_count=min_vote_count):
                     yield film_id
-
+    
     def __getattr__(self, category):
-        def func(id):
-            return self.get_name_by_id(category, id)
-        return func
+        return lambda id: self.get_name_by_id(category, id)
 
     def get_name_by_id(self, category, id):
         url = f'https://api.themoviedb.org/3/{category}/{id}'
