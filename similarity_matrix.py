@@ -1,28 +1,10 @@
-from datetime import datetime
 import numpy as np
-import pickle
-import os
 from scipy.sparse import csr_matrix
 import pandas as pd
 import tmdbpy
-import film
+from film import Film, film_info_schema
 from sklearn.preprocessing import MinMaxScaler
-    
-def pickle_init(init):
-    def wrapper(self, *args, **kwargs):
-        directory = os.path.join('local_storage', 'pickles', self.__class__.__name__)
-        ptf = os.path.join(directory, f"{datetime.now().strftime('%Y-%m-%d')}.pkl")
-        if os.path.exists(ptf):
-            with open(ptf, 'rb') as file:
-                temp_obj = pickle.load(file)
-                self.__dict__.update(temp_obj.__dict__)
-        else:
-            init(self, *args, **kwargs)
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            with open(ptf, 'wb') as file:
-                pickle.dump(self, file)
-    return wrapper
+from utils import pickle_init
 
 class SimilarityMatrix():
 
@@ -34,11 +16,8 @@ class SimilarityMatrix():
         also filter to a few specs
         '''
         vecs_non_norm = {} 
-        # for film_id in tmdbpy.TMDB().film_list(year_range=(2023, 2024), min_vote_count=50):
-        film_list_gen = tmdbpy.TMDB().film_list(year_range=(2023, 2024), min_vote_count=50)
-        film_list = [film_id for film_id in film_list_gen]
-        for film_id in film_list[:100]:
-            vecs_non_norm[film_id] = film.Film(film_id).vec
+        for film_id in tmdbpy.TMDB().film_list(year_range=(2020, 2024), min_vote_count=50):
+            vecs_non_norm[film_id] = Film(film_id).vec
 
         # normalize vectors
         vecs = self._normalize_vecs(vecs_non_norm)
@@ -58,7 +37,7 @@ class SimilarityMatrix():
         filtered_vecs_non_norm = {}
         for film_id, vec_non_norm in vecs_non_norm.items():
             filtered_vec_non_norm = {}
-            for feature_name, feature_schema in film.film_info_schema.items():
+            for feature_name, feature_schema in film_info_schema.items():
                 if feature_schema['norm_type'] != 'binary':
                     filtered_vec_non_norm[feature_name] = vec_non_norm[feature_name]
             filtered_vecs_non_norm[film_id] = filtered_vec_non_norm
