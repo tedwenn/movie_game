@@ -2,6 +2,7 @@ from datetime import datetime
 import numpy as np
 import tmdbpy
 import pandas as pd
+from utils import pickle_init
 
 crew_roles = [
     ('Directing', 'Director'),
@@ -39,6 +40,7 @@ film_info_schema = {feature_name: {'norm_type': norm_type, 'id_type': id_type} f
 
 class Film():
 
+    @pickle_init
     def __init__(self, film_id):
         self.film_id = film_id
         self.film_info = self._film_info(tmdbpy.TMDB().film(self.film_id))
@@ -116,5 +118,5 @@ class Film():
         film_info_schema_df = pd.DataFrame.from_dict(film_info_schema, orient='index')
         return df.merge(film_info_schema_df, left_index=True, right_index=True)
 
-    def __getattr__(self, attr):
-        return self.film_info[attr]
+    # def __getattr__(self, attr):
+    #     return self.film_info[attr]
