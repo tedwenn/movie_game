@@ -34,12 +34,19 @@ def get_or_cache_response(func):
     return wrapper
 
 def clear_cache():
-    for subdir, _, files in os.walk(cache_directory):
+    for root, dirs, files in os.walk(cache_directory, topdown=False):
         for file in files:
-            ptf = os.path.join(subdir, file)
+            ptf = os.path.join(root, file)
             if (time.time() - os.path.getmtime(ptf)) / 60 / 60 / 24 > cache_duration_days:
                 print('clearing', ptf)
                 os.remove(ptf)
+
+        # Remove empty directories
+        for name in dirs:
+            directory = os.path.join(root, name)
+            if not os.listdir(directory):
+                print('clearing', directory)
+                os.rmdir(directory)
 
 class TMDB():
 
@@ -82,8 +89,7 @@ class TMDB():
 
         if year:
 
-            date_str = datetime.now().strftime('%Y-%m-%d')
-            url = f'https://api.themoviedb.org/3/discover/movie?include_video=false&with_runtime.gte=60&release_date.lte={date_str}&primary_release_year={year}&sort_by=vote_count.desc'
+            url = f'https://api.themoviedb.org/3/discover/movie?include_video=false&with_runtime.gte=60&primary_release_year={year}&sort_by=vote_count.desc'
 
             if min_vote_count:
                 url += f'&vote_count.gte={min_vote_count}'
