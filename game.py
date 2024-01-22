@@ -1,6 +1,8 @@
 from film import Film
 from pprint import pformat
 from datetime import datetime, timedelta
+from similarity_matrix import SimilarityMatrix
+import pandas as pd
 import tmdbpy
 tmdb = tmdbpy.TMDB()
 
@@ -8,6 +10,30 @@ class Game():
 
     def __init__(self, film_id):
         self.answer = Answer(Film(film_id))
+        self.ranked_similarities = SimilarityMatrix((2018, 2025)).get_ranked_similarities(film_id)
+        self.guess_films = []
+
+    def guess(self, film_name_str):
+        guess_film_id = tmdb.search_film_id_by_title(film_name_str)
+        guess_film = Film(guess_film_id)
+
+        print('guessing', guess_film.title)
+        self.guess_films.append(guess_film)
+        self.answer.guess(guess_film)
+        # print(self.ranked_similarities[self.ranked_similarities['film_id'].isin(self.guess_film_ids)])
+        self.display_status()
+
+    def display_status(self):
+        print(self.answer)
+        self.display_ranked_similarities()
+
+    def display_ranked_similarities(self):
+        guess_data = {guess_film.film_id: guess_film.title for guess_film in self.guess_films}
+        guess_df = pd.DataFrame.from_dict(guess_data, orient='index', columns=['title'])
+        # guess_df = guess_df.merge(self.ranked_similarities, left_index=True, right_index=True)
+        guess_df = self.ranked_similarities.merge(guess_df, left_index=True, right_index=True)
+        print(guess_df)
+
 
 class Answer():
 
@@ -51,12 +77,18 @@ class Answer():
                     elif x in value_known:
                         known.append(x)
             else:
-                overlap = value_other - value
                 min_x, max_x = value_known or (None, None)
-                if overlap < 0 and (min_x is None or value_other > min_x):
-                    min_x = value_other
-                elif overlap > 0 and (max_x is None or value_other < max_x):
-                    max_x = value_other
+                if value_other < value:
+                    overlap = 'under'
+                    if min_x is None or value_other > min_x:
+                        min_x = value_other
+                elif value_other > value:
+                    overlap = 'over'
+                    if max_x is None or value_other < max_x:
+                        max_x = value_other
+                else:
+                    overlap = 'match'
+                    min_x, max_x = (value, value)
                 known = (min_x, max_x)
             row['overlap'] = overlap
             row['known'] = known
@@ -67,4 +99,7 @@ class Answer():
         df = df.apply(guess_row, axis=1)
         self.df = df[original_columns]
 
-Game(11)
+game = Game(747188)
+while True:
+    film_guess_name = input('Guess Film: ')
+    game.guess(film_guess_name)

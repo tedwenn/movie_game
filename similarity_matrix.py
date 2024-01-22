@@ -9,14 +9,14 @@ from utils import pickle_init
 class SimilarityMatrix():
 
     @pickle_init
-    def __init__(self):
+    def __init__(self, year_range):
 
         '''
         get all non-normalized vectors from set of films
         also filter to a few specs
         '''
         vecs_non_norm = {} 
-        for film_id in tmdbpy.TMDB().film_list(year_range=(2017, 2025), min_vote_count=50):
+        for film_id in tmdbpy.TMDB().film_list(year_range=year_range, min_vote_count=50):
             vecs_non_norm[film_id] = Film(film_id).vec
 
         # normalize vectors
@@ -88,16 +88,18 @@ class SimilarityMatrix():
         return similarity_matrix
     
     def get_similarity(self, film_id_1, film_id_2):
+        return self.get_similarity_from_film_idx(self.film_index[film_id_1], self.film_index[film_id_2])
+    
+    def get_similarity_from_film_idx(self, film_idx_1, film_idx_2):
         """Retrieve similarity from the precomputed matrix."""
-        return self.similarity_matrix[self.film_index[film_id_1], self.film_index[film_id_2]]
+        return self.similarity_matrix[film_idx_1, film_idx_2]
     
     def get_ranked_similarities(self, film_id):
 
-        # pull similarities to input film
-        similarities = [(f2, self.get_similarity(film_id, f2)) for f2 in self.film_index.keys()]
-
-        # Convert to a DataFrame
-        df = pd.DataFrame(similarities, columns=['film_id', 'similarity_score'])
+        # get df of similarity scores
+        film_idx = self.film_index[film_id]
+        df = pd.DataFrame.from_dict(self.film_index, orient='index', columns=['film_idx'])
+        df['similarity_score'] = df['film_idx'].apply(lambda i: self.get_similarity_from_film_idx(film_idx, i))
 
         # Sort the DataFrame by similarity score in descending order
         df.sort_values(by='similarity_score', ascending=False, inplace=True)
@@ -106,4 +108,4 @@ class SimilarityMatrix():
         df['rank'] = df['similarity_score'].rank(method='min', ascending=False).astype(int)
 
         # return df with columns ordered
-        return df[['film_id', 'rank', 'similarity_score']]
+        return df[['rank', 'similarity_score']]
