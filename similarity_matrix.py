@@ -16,7 +16,7 @@ class SimilarityMatrix():
         also filter to a few specs
         '''
         vecs_non_norm = {} 
-        for film_id in tmdbpy.TMDB().film_list(year_range=(2019, 2025), min_vote_count=50):
+        for film_id in tmdbpy.TMDB().film_list(year_range=(2017, 2025), min_vote_count=50):
             vecs_non_norm[film_id] = Film(film_id).vec
 
         # normalize vectors

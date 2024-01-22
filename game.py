@@ -66,3 +66,5 @@ class Answer():
         df = self.df.merge(other_film.film_info_df, left_index=True, right_index=True, suffixes=('', '_other'))
         df = df.apply(guess_row, axis=1)
         self.df = df[original_columns]
+
+Game(11)
