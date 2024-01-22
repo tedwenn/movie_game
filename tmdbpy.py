@@ -118,3 +118,7 @@ class TMDB():
     def get_name_by_id(self, category, id):
         url = f'https://api.themoviedb.org/3/{category}/{id}'
         return self.get_response(url)['name']
+    
+    def search_film_id_by_title(self, title_str):
+        url = f'https://api.themoviedb.org/3/search/movie?query={title_str}'
+        return self.get_response(url)['results'][0]['id']

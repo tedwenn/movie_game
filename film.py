@@ -118,5 +118,6 @@ class Film():
         film_info_schema_df = pd.DataFrame.from_dict(film_info_schema, orient='index')
         return df.merge(film_info_schema_df, left_index=True, right_index=True)
 
-    # def __getattr__(self, attr):
-    #     return self.film_info[attr]
+    @property
+    def title(self):
+        return self.film_info['title']
