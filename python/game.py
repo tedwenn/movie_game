@@ -99,7 +99,8 @@ class Answer():
         df = df.apply(guess_row, axis=1)
         self.df = df[original_columns]
 
-game = Game(747188)
-while True:
-    film_guess_name = input('Guess Film: ')
-    game.guess(film_guess_name)
+# game = Game(747188)
+# while True:
+#     film_guess_name = input('Guess Film: ')
+#     game.guess(film_guess_name)
+        
