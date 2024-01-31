@@ -3,15 +3,23 @@ from pprint import pformat
 from datetime import datetime, timedelta
 from similarity_matrix import SimilarityMatrix
 import pandas as pd
+import random
+from itertools import islice
 import tmdbpy
 tmdb = tmdbpy.TMDB()
 
 class Game():
 
-    def __init__(self, film_id):
+    def __init__(self, film_id=None):
+        year_range = (2022, 2025)
+        if film_id is None:
+            all_film_ids = tmdb.film_list(year_range=year_range, min_vote_count=50)
+            top_film_ids = list(islice(all_film_ids, 50))
+            film_id = random.choice(top_film_ids)
         self.answer = Answer(Film(film_id))
-        self.ranked_similarities = SimilarityMatrix((2018, 2025)).get_ranked_similarities(film_id)
+        self.ranked_similarities = SimilarityMatrix(year_range).get_ranked_similarities(film_id)
         self.guess_films = []
+        print('answer:', film_id)
 
     def guess(self, film_name_str):
         guess_film_id = tmdb.search_film_id_by_title(film_name_str)
@@ -20,19 +28,30 @@ class Game():
         print('guessing', guess_film.title)
         self.guess_films.append(guess_film)
         self.answer.guess(guess_film)
-        # print(self.ranked_similarities[self.ranked_similarities['film_id'].isin(self.guess_film_ids)])
-        self.display_status()
+        # self.display_status()
 
-    def display_status(self):
-        print(self.answer)
-        self.display_ranked_similarities()
-
-    def display_ranked_similarities(self):
+    @property
+    def status(self):
+        return {'info': self.answer.status, 'guess_similarity_scores': self.guess_similarity_scores}
+    
+    @property
+    def guess_similarity_scores(self):
         guess_data = {guess_film.film_id: guess_film.title for guess_film in self.guess_films}
         guess_df = pd.DataFrame.from_dict(guess_data, orient='index', columns=['title'])
-        # guess_df = guess_df.merge(self.ranked_similarities, left_index=True, right_index=True)
         guess_df = self.ranked_similarities.merge(guess_df, left_index=True, right_index=True)
-        print(guess_df)
+        return guess_df.to_dict(orient='records')
+
+
+    # def display_status(self):
+    #     print(self.answer)
+    #     self.display_ranked_similarities()
+
+    # def display_ranked_similarities(self):
+    #     guess_data = {guess_film.film_id: guess_film.title for guess_film in self.guess_films}
+    #     guess_df = pd.DataFrame.from_dict(guess_data, orient='index', columns=['title'])
+    #     # guess_df = guess_df.merge(self.ranked_similarities, left_index=True, right_index=True)
+    #     guess_df = self.ranked_similarities.merge(guess_df, left_index=True, right_index=True)
+    #     print(guess_df)
 
 
 class Answer():
@@ -42,7 +61,8 @@ class Answer():
         self.df['known'] = None
         self.df['overlap'] = None
 
-    def __repr__(self):
+    @property
+    def status(self):
         overlap = {}
         known = {}
         for feature_name, row in self.df.iterrows():
@@ -59,7 +79,10 @@ class Answer():
                     known_values = tuple([(datetime(1970, 1, 1) + timedelta(days=d)).strftime('%Y-%m-%d') if d else None for d in known_values])
                 known[feature_name] = known_values
                 overlap[feature_name] = overlap_values
-        return pformat({'overlap': overlap, 'known': known}, indent=4, width=100)
+        return {'overlap': overlap, 'known': known}
+
+    def __repr__(self):
+        return pformat(self.status, indent=4, width=100)
 
     def guess(self, other_film):
         def guess_row(row):
@@ -98,9 +121,3 @@ class Answer():
         df = self.df.merge(other_film.film_info_df, left_index=True, right_index=True, suffixes=('', '_other'))
         df = df.apply(guess_row, axis=1)
         self.df = df[original_columns]
-
-# game = Game(747188)
-# while True:
-#     film_guess_name = input('Guess Film: ')
-#     game.guess(film_guess_name)
-        

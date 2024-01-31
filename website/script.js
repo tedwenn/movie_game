@@ -1,28 +1,25 @@
-async function searchMovies() {
-    const apiKey = 'YOUR_API_KEY'; // figure out a safer way to store this
-    const query = document.getElementById('searchQuery').value;
-    const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
+document.getElementById('submitGuess').addEventListener('click', function() {
+    var guess = document.getElementById('guessInput').value;
+    sendGuess(guess);
+});
 
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        displayResults(data);
-    } catch (error) {
+function sendGuess(guess) {
+    fetch('http://127.0.0.1:5000/submit-guess', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ guess: guess })
+    })
+    .then(response => response.json())
+    .then(data => {
+        displayGameStatus(data.game_status);
+    })
+    .catch((error) => {
         console.error('Error:', error);
-    }
+    });
 }
 
-function displayResults(data) {
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = ''; // Clear previous results
-
-    if (data.results && data.results.length > 0) {
-        data.results.forEach(movie => {
-            const div = document.createElement('div');
-            div.textContent = `${movie.title} (${movie.release_date})`;
-            resultsDiv.appendChild(div);
-        });
-    } else {
-        resultsDiv.innerHTML = 'No results found';
-    }
+function displayGameStatus(status) {
+    document.getElementById('gameStatus').innerText = JSON.stringify(status, null, 2);
 }

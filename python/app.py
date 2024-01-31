@@ -1,20 +1,27 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 from game import Game
 
 app = Flask(__name__)
-game = Game(747188)
+game = Game()
+CORS(app)
 
 @app.route('/')
 def home():
     return "Hello, World!"
 
-@app.route('/submit_guess', methods=['POST'])
+@app.route('/submit-guess', methods=['POST'])
 def submit_guess():
-    # Extract guess from the request
+    print('guess submitted!')
     data = request.json
     guess = data.get('guess')
     game.guess(guess)
-    return jsonify({"message": "Guess submitted!"}), 200
+    response = {
+        'status': 'success',
+        'message': f'Your guess was: {guess}',
+        'game_status': game.status
+    }
+    return jsonify(response), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
