@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from datetime import datetime
 
 cache_directory = 'local_storage/tmdb_cache'
-cache_duration_days = 7
+cache_duration_days = 90
 
 def get_or_cache_response(func):
     def wrapper(self, url):
